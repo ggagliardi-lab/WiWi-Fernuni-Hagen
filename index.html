@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="FernUni WiWi">
+  <title>FernUni WiWi Companion</title>
+  <style>
+    :root {
+      --bg-mobile: #f4f5f8;
+      --card-bg: #ffffff;
+      --primary: #005A9C; /* FernUni Blau */
+      --primary-light: #e6f0fa;
+      --accent-green: #34c759;
+      --accent-red: #ff3b30;
+      --text: #1c1c1e;
+      --text-muted: #8e8e93;
+      --border: #e5e5ea;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+
+    body {
+      background-color: var(--bg-mobile);
+      color: var(--text);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      min-height: -webkit-fill-available;
+    }
+
+    .phone-container {
+      width: 100%;
+      max-width: 500px;
+      height: 100vh;
+      height: -webkit-fill-available;
+      background-color: var(--bg-mobile);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .status-bar {
+      padding-top: env(safe-area-inset-top, 10px);
+      height: calc(40px + env(safe-area-inset-top, 0px));
+      background: var(--card-bg);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-left: 20px;
+      padding-right: 20px;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--primary);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .app-header {
+      background: var(--card-bg);
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border);
+      text-align: center;
+    }
+    .app-header h1 { font-size: 16px; color: var(--primary); }
+
+    .content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px;
+      padding-bottom: 80px;
+      display: none;
+    }
+    .content.active { display: block; }
+
+    .card {
+      background: var(--card-bg);
+      border-radius: 14px;
+      padding: 14px;
+      margin-bottom: 12px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+      border: 1px solid var(--border);
+    }
+    .card h2 { font-size: 14px; margin-bottom: 10px; color: var(--text); display: flex; align-items: center; justify-content: space-between; }
+
+    .progress-bar-bg { background: #e5e5ea; height: 8px; border-radius: 4px; overflow: hidden; margin: 8px 0; }
+    .progress-bar-fill { background: var(--primary); height: 100%; width: 0%; transition: width 0.4s; }
+
+    .item-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 12px; }
+    .item-row:last-child { border-bottom: none; }
+
+    input, select, textarea {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 12px;
+      margin-bottom: 6px;
+      background: #fafafa;
+      outline: none;
+    }
+    .btn-add {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 10px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      width: 100%;
+    }
+    .btn-del {
+      background: #ffe5e5;
+      border: 1px solid #ffcccc;
+      color: var(--accent-red);
+      font-size: 13px;
+      cursor: pointer;
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-weight: bold;
+    }
+
+    /* Lecture & Chat Styles */
+    .lecture-item { background: #f8fafc; border-left: 4px solid var(--primary); padding: 10px; margin-bottom: 8px; border-radius: 6px; font-size: 11px; }
+    .lecture-item strong { font-size: 12px; color: var(--text); }
+    
+    .chat-box { height: 350px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding-bottom: 8px; }
+    .chat-bubble { max-width: 88%; padding: 10px 12px; border-radius: 12px; font-size: 12px; line-height: 1.4; white-space: pre-line; }
+    .chat-bubble.ai { background: #e9e9eb; color: var(--text); align-self: flex-start; }
+    .chat-bubble.user { background: var(--primary); color: white; align-self: flex-end; }
+    .quick-prompts { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 6px; margin-bottom: 6px; }
+    .prompt-chip { background: var(--primary-light); color: var(--primary); padding: 6px 10px; border-radius: 12px; font-size: 10px; white-space: nowrap; cursor: pointer; border: none; font-weight: 600; }
+
+    .tab-bar {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: calc(60px + env(safe-area-inset-bottom, 0px));
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+      background: var(--card-bg);
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      z-index: 100;
+    }
+    .tab-btn {
+      background: none; border: none; color: var(--text-muted); font-size: 10px; display: flex; flex-direction: column; align-items: center; gap: 2px; cursor: pointer; flex: 1;
+    }
+    .tab-btn.active { color: var(--primary); font-weight: bold; }
+    .tab-btn span { font-size: 18px; }
+    .badge { background: var(--accent-green); color: white; border-radius: 10px; padding: 2px 6px; font-size: 9px; margin-left: 4px; }
+  </style>
+</head>
+<body>
+
+<div class="phone-container">
+  <div class="status-bar">
+    <span>FernUni Hagen</span>
+    <span>B.Sc. WiWi <span id="saveBadge" class="badge">💾 Gespeichert</span></span>
+  </div>
+
+  <div class="app-header">
+    <h1>WiWi Study Companion</h1>
+  </div>
+
+  <!-- TAB 1: DASHBOARD -->
+  <div id="tab-dashboard" class="content active">
+    <div class="card">
+      <h2>📊 Gesamtfortschritt (B.Sc. WiWi)</h2>
+      <div style="font-size: 22px; font-weight: bold; color: var(--primary);" id="ectsTotalDisplay">0 / 180 ECTS</div>
+      <div class="progress-bar-bg"><div class="progress-bar-fill" id="ectsProgressBar"></div></div>
+      <div style="display: flex; justify-content: space-between; font-size: 11px; color: var(--text-muted); margin-top: 4px;">
+        <span id="gpaDisplay">Notenschnitt: -</span>
+        <span id="activeCountDisplay">0 Module in Bearbeitung</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>⏳ FernUni Termine & Fristen</h2>
+      <div id="deadlineList"></div>
+      
+      <div style="margin-top: 10px; border-top: 1px solid var(--border); padding-top: 8px;">
+        <input type="text" id="dlTitle" placeholder="Bezeichnung (z.B. EA 1 Abgabe Moodle)">
+        <input type="date" id="dlDate">
+        <button class="btn-add" onclick="addDeadline()">Termin hinzufügen</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>🔗 Schnelllinks FernUni Hagen</h2>
+      <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+        <a href="https://moodle.fernuni-hagen.de" target="_blank" style="flex:1; text-align:center; background:var(--primary-light); color:var(--primary); padding:8px; border-radius:8px; font-size:11px; font-weight:600; text-decoration:none;">🎓 Moodle Portal</a>
+        <a href="https://pos.fernuni-hagen.de" target="_blank" style="flex:1; text-align:center; background:var(--primary-light); color:var(--primary); padding:8px; border-radius:8px; font-size:11px; font-weight:600; text-decoration:none;">📝 Prüfungsamt (POS)</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 2: MODULE -->
+  <div id="tab-module" class="content">
+    <div class="card">
+      <h2>📚 Meine Module</h2>
+      <p style="font-size:10px; color:var(--text-muted); margin-bottom:8px;">Alle eingegebenen Kurse werden automatisch auf dem iPhone gespeichert.</p>
+      
+      <div id="moduleList"></div>
+
+      <div style="margin-top: 12px; border-top: 1px solid var(--border); padding-top: 10px;">
+        <h3 style="font-size: 12px; margin-bottom: 6px;">Neues Modul aus Katalog hinzufügen:</h3>
+        
+        <select id="mSelect"></select>
+
+        <div style="display: flex; gap: 6px; margin-top:4px;">
+          <select id="mStatus" onchange="toggleGradeInput()">
+            <option value="In Bearbeitung">In Bearbeitung</option>
+            <option value="Bestanden">Bestanden</option>
+            <option value="Geplant">Geplant</option>
+          </select>
+        </div>
+        <input type="number" id="mGrade" placeholder="Note (z. B. 1.7)" step="0.1" style="display:none;">
+        <button class="btn-add" onclick="addModuleFromCatalog()" style="margin-top: 6px;">Modul speichern</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 3: VORLESUNGEN & MENTORIATE -->
+  <div id="tab-lectures" class="content">
+    <div class="card">
+      <h2>🎥 Vorlesungen & Mentoriate</h2>
+      <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 10px;">Angebote, Adobe Connect/Zoom-Sitzungen & Konsultationen für deine aktiven Module.</p>
+      
+      <div id="lecturesContainer"></div>
+    </div>
+  </div>
+
+  <!-- TAB 4: KI TUTOR -->
+  <div id="tab-ai" class="content">
+    <div class="card" style="margin-bottom: 0;">
+      <h2>🤖 FernUni WiWi KI-Tutor</h2>
+      <div class="quick-prompts">
+        <button class="prompt-chip" onclick="quickPrompt('⚡ Erstelle mir einen Semesterplan für meine Kurse')">⚡ Lernplan</button>
+        <button class="prompt-chip" onclick="quickPrompt('📅 Welche Prüfungs-Anmeldefristen gibt es?')">📅 Anmeldefristen</button>
+        <button class="prompt-chip" onclick="quickPrompt('Erkläre mir Modul 31011 Externes RW')">📖 Modul 31011</button>
+        <button class="prompt-chip" onclick="quickPrompt('Wie funktioniert die Notenberechnung im Bachelor?')">💯 Notenberechnung</button>
+        <button class="prompt-chip" onclick="quickPrompt('Was ist das Minimum- und Maximumprinzip?')">💡 BWL Prinzipien</button>
+      </div>
+      <div class="chat-box" id="chatBox">
+        <div class="chat-bubble ai">Hallo! Ich bin dein FernUni Hagen WiWi-Expertensystem. Ich kenne all deine Module, Vorlesungen, Moodle-Abläufe, Klausurformen und fachlichen Fragen. Wie kann ich dir helfen?</div>
+      </div>
+      <div style="display: flex; gap: 6px; margin-top: 6px;">
+        <input type="text" id="chatInput" placeholder="Frage zu Modul, Formel oder Frist..." style="margin-bottom:0;" onkeypress="if(event.key==='Enter') sendMsg()">
+        <button class="btn-add" style="width: 45px;" onclick="sendMsg()">➔</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- NAVIGATION -->
+  <div class="tab-bar">
+    <button class="tab-btn active" onclick="switchTab('dashboard', this)"><span>🏠</span> Home</button>
+    <button class="tab-btn" onclick="switchTab('module', this)"><span>📖</span> Module</button>
+    <button class="tab-btn" onclick="switchTab('lectures', this)"><span>🎥</span> Vorlesung</button>
+    <button class="tab-btn" onclick="switchTab('ai', this)"><span>🤖</span> KI-Tutor</button>
+  </div>
+</div>
+
+<script>
+  // FernUni Hagen WiWi Modulkatalog inklusive Vorlesungs- & Betreuungs-Metadaten
+  const fernUniCatalog = [
+    { 
+      code: "31001", 
+      name: "Einführung in die Wirtschaftswissenschaft", 
+      ects: 10, 
+      type: "Pflicht",
+      lectures: [
+        { title: "Online-Einführungsveranstaltung", time: "Semesterbeginn (Adobe Connect)", desc: "Überblick über Orientierung, Kurseinheiten & Moodle" },
+        { title: "Moodle-Betreuung & Mentoriat EBWL / EVWL", time: "Fortlaufend / Wöchentlich", desc: "Virtuelle Mentoriate der Regionalzentren (z. B. Hagen, München, Berlin)" }
+      ]
+    },
+    { 
+      code: "31011", 
+      name: "Externes Rechnungswesen", 
+      ects: 10, 
+      type: "Pflicht",
+      lectures: [
+        { title: "Einführung in die Buchhaltung (Buchführung)", time: "Monatlich live via Zoom", desc: "Buchungssätze, T-Konten und Bilanzerstellung" },
+        { title: "Klausurvorbereitungskurs JAP & Bilanzierung", time: "Ca. 4 Wochen vor Klausur", desc: "Durchsprache von Altklausuren" }
+      ]
+    },
+    { 
+      code: "31021", 
+      name: "Investition und Finanzierung", 
+      ects: 10, 
+      type: "Pflicht",
+      lectures: [
+        { title: "Finanzmathematische Grundlagen & Investitionsrechnung", time: "Mitte des Semesters", desc: "Kapitalwertmethode, Kw, Zinsfuß & Annuitäten" },
+        { title: "Unternehmensfinanzierung & Anleihen", time: "Vor Klausurphase", desc: "Virtuelle Fragestunde mit Lehrstuhl-Betreuern" }
+      ]
+    },
+    { 
+      code: "31031", 
+      name: "Internes Rechnungswesen & Funktionale Steuerung", 
+      ects: 10, 
+      type: "Pflicht",
+      lectures: [
+        { title: "Kosten- und Leistungsrechnung (KLR) Intensiv", time: "Monatlich", desc: "Kostenarten, Kostenstellen, Kostenträger & Deckungsbeitragsrechnung" }
+      ]
+    },
+    { 
+      code: "31041", 
+      name: "Mikroökonomik", 
+      ects: 10, 
+      type: "Pflicht",
+      lectures: [
+        { title: "Haushaltstheorie & Produktionstheorie", time: "Wöchentliches Moodle-Quiz + Live Stream", desc: "Nutzenmaximierung, Indifferenzkurven & Marktformen" }
+      ]
+    },
+    { 
+      code: "31051", 
+      name: "Makroökonomik", 
+      ects: 10, 
+      type: "Pflicht",
+      lectures: [
+        { title: "IS-LM-Modell & AS-AD-Modell", time: "Mitte Semester", desc: "Geld- und Gütermarktgleichgewicht sowie Inflation" }
+      ]
+    },
+    { 
+      code: "31061", 
+      name: "Grundlagen des Privat- und Wirtschaftsrechts", 
+      ects: 10, 
+      type: "Pflicht",
+      lectures: [
+        { title: "BGB Allgemeiner Teil & Schuldrecht Falllösung", time: "Alle 2 Wochen", desc: "Gutachtenstil für Rechtsklausuren" }
+      ]
+    },
+    { 
+      code: "31071", 
+      name: "Einführung in die Wirtschaftsinformatik", 
+      ects: 10, 
+      type: "Pflicht",
+      lectures: [
+        { title: "ER-Modellierung & SQL Datenbanken", time: "Flexibel auf Video-Server", desc: "Praktische Übungen zu Datenbanken & Geschäftsprozessen" }
+      ]
+    },
+    { 
+      code: "31101", 
+      name: "Grundlagen der Wirtschaftsmathematik & Statistik", 
+      ects: 10, 
+      type: "Pflicht",
+      lectures: [
+        { title: "Mathe-Repetitorium (Analysis/Linear A.)", time: "Wöchentlich", desc: "Matrixrechnung, Ableitungen, Extremwerte" },
+        { title: "Statistik Betreuungssitzungen", time: "Zweite Semesterhälfte", desc: "Wahrscheinlichkeitsrechnung & Deskriptive Statistik" }
+      ]
+    },
+    { 
+      code: "31102", 
+      name: "Unternehmensführung", 
+      ects: 10, 
+      type: "Pflicht",
+      lectures: [
+        { title: "Strategie & Organisation Online-Vortrag", time: "Monatlich", desc: "Fallstudien und Lehrstuhltalks" }
+      ]
+    },
+    { code: "31621", name: "Grundlagen des Marketing", ects: 10, type: "Wahlpflicht", lectures: [{ title: "Marketing-Mix & Marktforschung", time: "Online", desc: "Virtuelle Vorlesungen" }] },
+    { code: "31501", name: "Finanzwirtschaft", ects: 10, type: "Wahlpflicht", lectures: [{ title: "Portfoliotheorie & CAPM", time: "Online", desc: "Kapitalmarkttheorie" }] },
+    { code: "31701", name: "Personalführung", ects: 10, type: "Wahlpflicht", lectures: [{ title: "Führungstheorien & Motivation", time: "Online", desc: "Vorlesungsaufzeichnungen" }] },
+    { code: "31671", name: "Strategisches Management", ects: 10, type: "Wahlpflicht", lectures: [{ title: "BRiVE & Ressourcenansatz", time: "Online", desc: "Fallstudienseminar" }] },
+    { code: "31171", name: "Überfachliche Kompetenzen", ects: 10, type: "Pflicht", lectures: [{ title: "Wissenschaftliches Arbeiten", time: "Semesterstart", desc: "Schreiben von Hausarbeiten" }] }
+  ];
+
+  // Datenstrukturen
+  let modules = [];
+  let deadlines = [];
+
+  // Speicherung im LocalStorage auf dem iPhone
+  function loadData() {
+    const savedMods = localStorage.getItem('fw_modules');
+    const savedDL = localStorage.getItem('fw_deadlines');
+
+    if (savedMods) {
+      modules = JSON.parse(savedMods);
+    } else {
+      // Vorbelegte Initialdaten
+      modules = [
+        { id: 101, name: "31001: Einführung in die WiWi", ects: 10, status: "Bestanden", grade: 1.7 },
+        { id: 102, name: "31011: Externes Rechnungswesen", ects: 10, status: "In Bearbeitung", grade: null },
+        { id: 103, name: "31101: Wirtschaftsmathe & Statistik", ects: 10, status: "In Bearbeitung", grade: null }
+      ];
+    }
+
+    if (savedDL) {
+      deadlines = JSON.parse(savedDL);
+    } else {
+      deadlines = [
+        { id: 201, title: "Anmeldezeitraum A2 (Klausuren)", date: "2026-08-31" },
+        { id: 202, title: "EA 1 Abgabe (Moodle)", date: "2026-06-15" },
+        { id: 203, title: "Klausur 31011 Externes RW", date: "2026-09-08" }
+      ];
+    }
+  }
+
+  function saveData() {
+    localStorage.setItem('fw_modules', JSON.stringify(modules));
+    localStorage.setItem('fw_deadlines', JSON.stringify(deadlines));
+    
+    // Visuelles Feedback für Speicherung
+    const badge = document.getElementById('saveBadge');
+    badge.style.opacity = '1';
+    setTimeout(() => { badge.style.opacity = '0.7'; }, 1000);
+  }
+
+  function populateCatalogDropdown() {
+    const select = document.getElementById('mSelect');
+    select.innerHTML = '';
+    fernUniCatalog.forEach(m => {
+      const opt = document.createElement('option');
+      opt.value = JSON.stringify(m);
+      opt.innerText = `${m.code}: ${m.name} (${m.ects} ECTS - ${m.type})`;
+      select.appendChild(opt);
+    });
+  }
+
+  window.deleteModule = function(id) {
+    modules = modules.filter(m => m.id !== id);
+    saveData();
+    renderModules();
+  };
+
+  window.deleteDeadline = function(id) {
+    deadlines = deadlines.filter(d => d.id !== id);
+    saveData();
+    renderDeadlines();
+  };
+
+  function renderModules() {
+    const list = document.getElementById('moduleList');
+    list.innerHTML = '';
+    let totalEcts = 0;
+    let weightedSum = 0;
+    let gradedEcts = 0;
+    let activeCount = 0;
+
+    if(modules.length === 0) {
+      list.innerHTML = '<p style="font-size:12px; color:var(--text-muted); text-align:center; padding:15px 0;">Keine Module ausgewählt.</p>';
+    }
+
+    modules.forEach(m => {
+      if(m.status === 'Bestanden') {
+        totalEcts += m.ects;
+        if(m.grade) {
+          weightedSum += m.grade * m.ects;
+          gradedEcts += m.ects;
+        }
+      } else if(m.status === 'In Bearbeitung') {
+        activeCount++;
+      }
+
+      const item = document.createElement('div');
+      item.className = 'item-row';
+      item.innerHTML = `
+        <div>
+          <strong>${m.name}</strong> (${m.ects} ECTS)<br>
+          <small style="color:${m.status === 'Bestanden' ? 'var(--accent-green)' : (m.status === 'In Bearbeitung' ? 'var(--primary)' : 'var(--text-muted)')}">
+            ${m.status} ${m.grade ? '('+m.grade+')' : ''}
+          </small>
+        </div>
+        <button class="btn-del" onclick="deleteModule(${m.id})">🗑️</button>
+      `;
+      list.appendChild(item);
+    });
+
+    document.getElementById('ectsTotalDisplay').innerText = `${totalEcts} / 180 ECTS`;
+    document.getElementById('ectsProgressBar').style.width = `${Math.min((totalEcts / 180) * 100, 100)}%`;
+    
+    const gpa = gradedEcts > 0 ? (weightedSum / gradedEcts).toFixed(2) : "-";
+    document.getElementById('gpaDisplay').innerText = `Notenschnitt: ${gpa}`;
+    document.getElementById('activeCountDisplay').innerText = `${activeCount} in Bearbeitung`;
+
+    renderLectures();
+  }
+
+  function renderLectures() {
+    const container = document.getElementById('lecturesContainer');
+    const activeMods = modules.filter(m => m.status === 'In Bearbeitung');
+
+    if(activeMods.length === 0) {
+      container.innerHTML = `
+        <p style="font-size:12px; color:var(--text-muted); text-align:center; padding:15px 0;">
+          Keine aktiven Module vorhanden. Setze im Tab "Module" deine aktuellen Kurse auf "In Bearbeitung", um hier Termine und Vorlesungen zu sehen.
+        </p>
+      `;
+      return;
+    }
+
+    let html = '';
+    activeMods.forEach(m => {
+      // Suche im Katalog nach Vorlesungsdaten
+      const catEntry = fernUniCatalog.find(c => m.name.includes(c.code));
+      html += `<div style="margin-bottom:14px;"><strong style="font-size:13px; color:var(--primary);">${m.name}</strong></div>`;
+
+      if(catEntry && catEntry.lectures) {
+        catEntry.lectures.forEach(l => {
+          html += `
+            <div class="lecture-item">
+              <strong>📹 ${l.title}</strong><br>
+              <span style="color:var(--text-muted);">🕒 ${l.time}</span><br>
+              <span>ℹ️ ${l.desc}</span>
+            </div>
+          `;
+        });
+      } else {
+        html += `<div class="lecture-item">Vorlesungen & Mentoriatstermine direkt im Moodle-Kursraum abrufbar.</div>`;
+      }
+    });
+
+    container.innerHTML = html;
+  }
+
+  function toggleGradeInput() {
+    const status = document.getElementById('mStatus').value;
+    document.getElementById('mGrade').style.display = status === 'Bestanden' ? 'block' : 'none';
+  }
+
+  function addModuleFromCatalog() {
+    const raw = document.getElementById('mSelect').value;
+    if(!raw) return;
+    const item = JSON.parse(raw);
+    const status = document.getElementById('mStatus').value;
+    const gradeVal = parseFloat(document.getElementById('mGrade').value);
+
+    if(modules.some(m => m.name.includes(item.code))) {
+      alert("Dieses Modul hast du bereits hinzugefügt!");
+      return;
+    }
+
+    modules.push({
+      id: Date.now(),
+      name: `${item.code}: ${item.name}`,
+      ects: item.ects,
+      status: status,
+      grade: status === 'Bestanden' && !isNaN(gradeVal) ? gradeVal : null
+    });
+
+    saveData();
+    renderModules();
+  }
+
+  function renderDeadlines() {
+    const list = document.getElementById('deadlineList');
+    list.innerHTML = '';
+    deadlines.forEach(d => {
+      const item = document.createElement('div');
+      item.className = 'item-row';
+      item.innerHTML = `
+        <span><strong>${d.title}</strong><br><small style="color:var(--text-muted);">${d.date}</small></span>
+        <button class="btn-del" onclick="deleteDeadline(${d.id})">🗑️</button>
+      `;
+      list.appendChild(item);
+    });
+  }
+
+  function addDeadline() {
+    const title = document.getElementById('dlTitle').value.trim();
+    const date = document.getElementById('dlDate').value;
+    if(title && date) {
+      deadlines.push({ id: Date.now(), title, date });
+      document.getElementById('dlTitle').value = '';
+      document.getElementById('dlDate').value = '';
+      saveData();
+      renderDeadlines();
+    }
+  }
+
+  function switchTab(tabId, btn) {
+    document.querySelectorAll('.content').forEach(c => c.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('tab-' + tabId).classList.add('active');
+    btn.classList.add('active');
+  }
+
+  function sendMsg() {
+    const input = document.getElementById('chatInput');
+    const text = input.value.trim();
+    if(!text) return;
+    quickPrompt(text);
+    input.value = '';
+  }
+
+  function quickPrompt(text) {
+    const box = document.getElementById('chatBox');
+    box.innerHTML += `<div class="chat-bubble user">${text}</div>`;
+    box.scrollTop = box.scrollHeight;
+
+    setTimeout(() => {
+      let reply = "";
+      const lower = text.toLowerCase();
+      const activeMods = modules.filter(m => m.status === 'In Bearbeitung');
+
+      if(lower.includes("31011") || lower.includes("externes rechnungswesen") || lower.includes("buchhaltung")) {
+        reply = "📘 **Modul 31011: Externes Rechnungswesen (10 ECTS)**\n\n" +
+                "• **Inhalte:** Buchführung, T-Konten, Jahresabschluss, Bilanzierung nach HGB, GuV.\n" +
+                "• **Klausur:** 2-stündige Klausur (meist Buchungssätze & Bilanzansätze).\n" +
+                "• **Einsendearbeiten:** Bestätigung im Moodle zwingend nötig für Klausurzulassung!\n" +
+                "• **Tipp:** Lerne die Standart-Buchungssätze zwingend auswendig!";
+      } else if(lower.includes("31001") || lower.includes("einführung in die wiwi")) {
+        reply = "📘 **Modul 31001: Einführung in die WiWi (10 ECTS)**\n\n" +
+                "• **Zwei Teile:** Einführung in die BWL (EBWL) & Einführung in die VWL (EVWL).\n" +
+                "• **Prüfung:** Multiple-Choice-Klausur.\n" +
+                "• **Tipp:** Arbeite intensiv mit den Übungsaufgaben in Moodle, da die Fragentypen in der Klausur sehr ähnlich sind.";
+      } else if(lower.includes("31101") || lower.includes("mathe") || lower.includes("statistik")) {
+        reply = "📘 **Modul 31101: Wirtschaftsmathe & Statistik (10 ECTS)**\n\n" +
+                "• **Teil A (Mathe):** Analysis, Matrizenrechnung, LGS, Extremwerte.\n" +
+                "• **Teil B (Statistik):** Kennzahlen, Wahrscheinlichkeitsrechnung, Regression.\n" +
+                "• **Tipp:** Bringe einen zugelassenen Taschenrechner mit und rechne die letzten 5 Jahre Altklausuren durch!";
+      } else if(lower.includes("lehrplan") || lower.includes("semesterplan") || lower.includes("lernplan")) {
+        if(activeMods.length === 0) {
+          reply = "⚠️ Du hast aktuell keine Module mit dem Status 'In Bearbeitung'. Füge im Tab 'Module' deine aktuellen FernUni-Kurse hinzu!";
+        } else {
+          reply = `📌 **FernUni-Lernplan für deine Kurse:**\n\n` +
+                  `Aktive Module: **${activeMods.map(m => m.name).join(', ')}**\n\n` +
+                  `• **Woche 1–6:** Kurseinheiten gründlich durcharbeiten & Skripte bearbeiten.\n` +
+                  `• **Woche 7–10:** Moodle-Einsendearbeiten (EA) fristgerecht abgeben!\n` +
+                  `• **Woche 11–12:** Prüfungsanmeldung (A2) im WebPrüfungsamt erledigen.\n` +
+                  `• **Letzte 4 Wochen:** Fokus auf Altklausuren & Intensivwiederholung.`;
+        }
+      } else if(lower.includes("frist") || lower.includes("anmeld") || lower.includes("termin")) {
+        reply = "🗓️ **Wichtige FernUni Fristen & Zeiträume:**\n\n" +
+                "• **Anmeldezeitraum A1:** 15.11.–30.11. (WiSe) bzw. 15.05.–31.05. (SoSe) für Seminar- & Mündliche Prüfungen.\n" +
+                "• **Anmeldezeitraum A2:** 15.02.–28./29.02. (WiSe) bzw. 15.08.–31.08. (SoSe) für reguläre Klausuren.\n" +
+                "• **Rückmeldung:** 01.12.–31.01. (SoSe) bzw. 01.06.–31.07. (WiSe).";
+      } else if(lower.includes("notenberechnung") || lower.includes("schnitt") || lower.includes("note")) {
+        reply = "💯 **Notenberechnung im B.Sc. WiWi:**\n\n" +
+                "Die Gesamtnote ergibt sich als ECTS-gewichteter Mittelwert aller bestandenen Pflicht- und Wahlpflichtmodule sowie der Bachelorarbeit.\n" +
+                "Diese App berechnet deinen aktuellen Notenschnitt im Dashboard automatisch!";
+      } else if(lower.includes("prinzip") || lower.includes("minimum") || lower.includes("maximum")) {
+        reply = "💡 **Ökonomisches Prinzip:**\n\n" +
+                "1. **Minimumprinzip:** Ein gegebenes Ziel mit minimalem Mitteleinsatz erreichen.\n" +
+                "2. **Maximumprinzip:** Mit gegebenen Mitteln das maximale Ziel erreichen.\n" +
+                "3. **Extremumprinzip:** Optimales Verhältnis zwischen Nutzen und Kosten.";
+      } else {
+        reply = `🤖 **FernUni WiWi-Tutor:** Ich kenne alle Kurse des Studiengangs B.Sc. Wirtschaftswissenschaft. Frag mich gerne nach Fachbegriffen, Moodle-Abläufen oder Klausurtipps zu deinem Fach!`;
+      }
+
+      box.innerHTML += `<div class="chat-bubble ai">${reply.replace(/\n/g, '<br>')}</div>`;
+      box.scrollTop = box.scrollHeight;
+    }, 400);
+  }
+
+  // Beim Laden ausführen
+  loadData();
+  populateCatalogDropdown();
+  renderModules();
+  renderDeadlines();
+</script>
+</body>
+</html>
