@@ -1,0 +1,973 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="FernUni WiWi">
+  <title>FernUni WiWi Companion Pro Ultra</title>
+  <style>
+    :root {
+      --bg-mobile: #f4f5f8;
+      --card-bg: #ffffff;
+      --primary: #005A9C; /* FernUni Blau */
+      --primary-light: #e6f0fa;
+      --accent-green: #34c759;
+      --accent-red: #ff3b30;
+      --accent-orange: #ff9500;
+      --accent-purple: #af52de;
+      --text: #1c1c1e;
+      --text-muted: #8e8e93;
+      --border: #e5e5ea;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+
+    body {
+      background-color: var(--bg-mobile);
+      color: var(--text);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      min-height: -webkit-fill-available;
+    }
+
+    .phone-container {
+      width: 100%;
+      max-width: 500px;
+      height: 100vh;
+      height: -webkit-fill-available;
+      background-color: var(--bg-mobile);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .status-bar {
+      padding-top: env(safe-area-inset-top, 10px);
+      height: calc(40px + env(safe-area-inset-top, 0px));
+      background: var(--card-bg);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-left: 20px;
+      padding-right: 20px;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--primary);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .app-header {
+      background: var(--card-bg);
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border);
+      text-align: center;
+    }
+    .app-header h1 { font-size: 16px; color: var(--primary); }
+
+    .content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px;
+      padding-bottom: 85px;
+      display: none;
+    }
+    .content.active { display: block; }
+
+    .card {
+      background: var(--card-bg);
+      border-radius: 14px;
+      padding: 14px;
+      margin-bottom: 12px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+      border: 1px solid var(--border);
+    }
+    .card h2 { font-size: 14px; margin-bottom: 10px; color: var(--text); display: flex; align-items: center; justify-content: space-between; }
+
+    .progress-bar-bg { background: #e5e5ea; height: 8px; border-radius: 4px; overflow: hidden; margin: 8px 0; }
+    .progress-bar-fill { background: var(--primary); height: 100%; width: 0%; transition: width 0.4s; }
+
+    .item-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 12px; }
+    .item-row:last-child { border-bottom: none; }
+
+    input, select, textarea {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 12px;
+      margin-bottom: 6px;
+      background: #fafafa;
+      outline: none;
+    }
+    .btn-add {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 10px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      width: 100%;
+    }
+    .btn-del {
+      background: #ffe5e5;
+      border: 1px solid #ffcccc;
+      color: var(--accent-red);
+      font-size: 13px;
+      cursor: pointer;
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-weight: bold;
+    }
+
+    /* Schnellaktionen Buttons */
+    .quick-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+    .btn-action { background: var(--primary-light); color: var(--primary); border: 1px solid rgba(0,90,156,0.15); border-radius: 8px; padding: 8px; font-size: 11px; font-weight: 600; cursor: pointer; text-align: center; }
+
+    /* Lecture & News & Info Styles */
+    .lecture-item { background: #f8fafc; border-left: 4px solid var(--primary); padding: 10px; margin-bottom: 8px; border-radius: 6px; font-size: 11px; }
+    .lecture-item strong { font-size: 12px; color: var(--text); }
+    
+    .news-item { background: #fff; border-left: 4px solid var(--accent-orange); padding: 10px; margin-bottom: 10px; border-radius: 8px; font-size: 11px; border: 1px solid var(--border); }
+    .news-tag { display: inline-block; background: var(--primary-light); color: var(--primary); padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 9px; margin-bottom: 4px; }
+
+    .info-box { background: #fafafa; padding: 10px; border-radius: 8px; margin-bottom: 8px; font-size: 11px; line-height: 1.4; border: 1px solid var(--border); }
+    .info-box strong { color: var(--primary); }
+
+    .chat-box { height: 350px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding-bottom: 8px; }
+    .chat-bubble { max-width: 90%; padding: 10px 12px; border-radius: 12px; font-size: 12px; line-height: 1.4; white-space: pre-line; }
+    .chat-bubble.ai { background: #e9e9eb; color: var(--text); align-self: flex-start; }
+    .chat-bubble.user { background: var(--primary); color: white; align-self: flex-end; }
+    .quick-prompts { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 6px; margin-bottom: 6px; }
+    .prompt-chip { background: var(--primary-light); color: var(--primary); padding: 6px 10px; border-radius: 12px; font-size: 10px; white-space: nowrap; cursor: pointer; border: none; font-weight: 600; }
+
+    .tab-bar {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: calc(60px + env(safe-area-inset-bottom, 0px));
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+      background: var(--card-bg);
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      z-index: 100;
+    }
+    .tab-btn {
+      background: none; border: none; color: var(--text-muted); font-size: 9px; display: flex; flex-direction: column; align-items: center; gap: 2px; cursor: pointer; flex: 1;
+    }
+    .tab-btn.active { color: var(--primary); font-weight: bold; }
+    .tab-btn span { font-size: 16px; }
+    .badge { background: var(--accent-green); color: white; border-radius: 10px; padding: 2px 6px; font-size: 9px; margin-left: 4px; transition: opacity 0.3s; }
+  </style>
+</head>
+<body>
+
+<div class="phone-container">
+  <div class="status-bar">
+    <span>FernUni Hagen</span>
+    <span>B.Sc. WiWi <span id="saveBadge" class="badge" style="opacity:0.7;">💾 Gespeichert</span></span>
+  </div>
+
+  <div class="app-header">
+    <h1>WiWi Companion Ultra</h1>
+  </div>
+
+  <!-- TAB 1: DASHBOARD -->
+  <div id="tab-dashboard" class="content active">
+    
+    <!-- SCHNELLAKTIONEN -->
+    <div class="quick-actions">
+      <button class="btn-action" onclick="switchToTabAndFocus('ai', 'Klausur bestanden tragen')">⚡ Noten eintragen</button>
+      <button class="btn-action" onclick="switchToTabAndFocus('dashboard', 'dlTitle')">📅 Termin anlegen</button>
+      <button class="btn-action" onclick="triggerAILernplan()">🤖 KI-Lernplan</button>
+      <button class="btn-action" onclick="triggerAutoDeadlines()">⚡ Auto-Fristen</button>
+    </div>
+
+    <div class="card">
+      <h2>📊 Gesamtfortschritt (B.Sc. WiWi)</h2>
+      <div style="font-size: 22px; font-weight: bold; color: var(--primary);" id="ectsTotalDisplay">0 / 180 ECTS</div>
+      <div class="progress-bar-bg"><div class="progress-bar-fill" id="ectsProgressBar"></div></div>
+      <div style="display: flex; justify-content: space-between; font-size: 11px; color: var(--text-muted); margin-top: 4px;">
+        <span id="gpaDisplay">Notenschnitt: -</span>
+        <span id="activeCountDisplay">0 Module in Bearbeitung</span>
+      </div>
+      <div id="gpaPrognose" style="font-size: 10px; color: var(--accent-purple); margin-top: 6px; font-weight: 600;"></div>
+    </div>
+
+    <div class="card">
+      <h2>🔗 Portal Links & StudyPort</h2>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+        <a href="https://studyport.fernuni-hagen.de" target="_blank" style="text-align:center; background:var(--primary); color:white; padding:8px; border-radius:8px; font-size:11px; font-weight:600; text-decoration:none;">🌐 StudyPort Portal</a>
+        <a href="https://moodle.fernuni-hagen.de" target="_blank" style="text-align:center; background:var(--primary-light); color:var(--primary); padding:8px; border-radius:8px; font-size:11px; font-weight:600; text-decoration:none;">🎓 Moodle Platform</a>
+        <a href="https://pos.fernuni-hagen.de" target="_blank" style="text-align:center; background:var(--primary-light); color:var(--primary); padding:8px; border-radius:8px; font-size:11px; font-weight:600; text-decoration:none;">📝 POS Prüfungsamt</a>
+        <a href="https://www.fernuni-hagen.de/wirtschaftswissenschaft/studium/aktuelles/" target="_blank" style="text-align:center; background:var(--primary-light); color:var(--primary); padding:8px; border-radius:8px; font-size:11px; font-weight:600; text-decoration:none;">ℹ️ Fakultät WiWi</a>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>⏳ Fristen & Termine (StudyPort & Moodle)</h2>
+      <div id="deadlineList"></div>
+      
+      <div style="margin-top: 10px; border-top: 1px solid var(--border); padding-top: 8px;">
+        <input type="text" id="dlTitle" placeholder="Bezeichnung (z. B. StudyPort Klausuranmeldung)">
+        <input type="date" id="dlDate">
+        <button class="btn-add" onclick="addDeadline()">Termin hinzufügen</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 2: MODULE -->
+  <div id="tab-module" class="content">
+    <div class="card">
+      <h2>📚 Meine Module</h2>
+      <p style="font-size:10px; color:var(--text-muted); margin-bottom:8px;">Alle eingegebenen Kurse werden automatisch auf deinem Gerät gespeichert.</p>
+      
+      <div id="moduleList"></div>
+
+      <div style="margin-top: 12px; border-top: 1px solid var(--border); padding-top: 10px;">
+        <h3 style="font-size: 12px; margin-bottom: 6px;">Neues Modul aus Katalog hinzufügen:</h3>
+        
+        <select id="mSelect"></select>
+
+        <div style="display: flex; gap: 6px; margin-top:4px;">
+          <select id="mStatus" onchange="toggleGradeInput()">
+            <option value="In Bearbeitung">In Bearbeitung</option>
+            <option value="Bestanden">Bestanden</option>
+            <option value="Geplant">Geplant</option>
+          </select>
+        </div>
+        <input type="number" id="mGrade" placeholder="Note (z. B. 1.7)" step="0.1" style="display:none;">
+        <button class="btn-add" onclick="addModuleFromCatalog()" style="margin-top: 6px;">Modul speichern</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 3: VORLESUNGEN & MENTORIATE -->
+  <div id="tab-lectures" class="content">
+    <div class="card">
+      <h2>🎥 Vorlesungen & Mentoriate</h2>
+      <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 10px;">Angebote, Adobe Connect/Zoom-Sitzungen & Konsultationen für deine aktiven Module.</p>
+      
+      <div id="lecturesContainer"></div>
+    </div>
+  </div>
+
+  <!-- TAB 4: NEWS & MITTEILUNGEN -->
+  <div id="tab-news" class="content">
+    <div class="card">
+      <h2>📰 WiWi & FernUni News</h2>
+      <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 12px;">Aktuelle Mitteilungen der Fakultät Wirtschaftswissenschaft, StudyPort-Updates & Prüfungsamt.</p>
+      
+      <div id="newsContainer"></div>
+
+      <div style="margin-top: 10px; border-top: 1px solid var(--border); padding-top: 8px;">
+        <h3 style="font-size: 12px; margin-bottom: 6px;">Eigene Notiz/News hinzufügen:</h3>
+        <input type="text" id="newsTitle" placeholder="Titel / Betreff">
+        <textarea id="newsBody" placeholder="Inhalt der Mitteilung..." rows="2"></textarea>
+        <button class="btn-add" onclick="addCustomNews()">Notiz speichern</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 5: INFO SEITE & BACKUP -->
+  <div id="tab-info" class="content">
+    <div class="card">
+      <h2>💾 Datensicherung & Export</h2>
+      <div style="display:flex; gap:8px;">
+        <button class="btn-add" style="background:var(--accent-purple);" onclick="exportData()">📤 Backup Exportieren</button>
+        <button class="btn-add" style="background:var(--accent-orange);" onclick="document.getElementById('importFile').click()">📥 Backup Laden</button>
+        <input type="file" id="importFile" style="display:none;" onchange="importData(event)" accept=".json">
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>ℹ️ Studiengangs-Info B.Sc. WiWi</h2>
+      
+      <div class="info-box">
+        <strong>🎓 Allgemeine Daten:</strong><br>
+        • <strong>Abschluss:</strong> Bachelor of Science (B.Sc.)<br>
+        • <strong>Umfang:</strong> 180 ECTS (Pflicht-, Wahlpflichtmodul & Bachelorarbeit)<br>
+        • <strong>Regelstudienzeit:</strong> 6 Semester (Vollzeit) / 9–12 Semester (Teilzeit)
+      </div>
+
+      <div class="info-box">
+        <strong>⚖️ Prüfungsordnung (PO) & Regeln:</strong><br>
+        • <strong>Anzahl Versuche:</strong> Maximal 3 Versuche pro Modulabschlussprüfung.<br>
+        • <strong>Freiversuch / Notenverbesserung:</strong> Nach bestandener Erstprüfung kann innerhalb der Frist zur Notenverbesserung einmalig wiederholt werden.<br>
+        • <strong>Krankheitsrücktritt:</strong> Ärztliches Attest muss unverzüglich (innerhalb von 3 Werktagen) beim Prüfungsamt eingereicht werden.
+      </div>
+
+      <div class="info-box">
+        <strong>💰 Kosten & Beleggebühren:</strong><br>
+        • <strong>Grundbeitrag:</strong> Ca. 60 € Studierendenschaftsbeitrag pro Semester.<br>
+        • <strong>Materialgebühr:</strong> 11 € pro belegter Semesterwochenstunde (SWS) / ca. 120 € pro 10 ECTS Modul.
+      </div>
+
+      <div class="info-box">
+        <strong>📞 Wichtige Ansprechpartner & Support:</strong><br>
+        • <strong>Prüfungsamt WiWi:</strong> wiwi.pa@fernuni-hagen.de<br>
+        • <strong>ZMI Helpdesk (IT-Accounts):</strong> helpdesk@fernuni-hagen.de<br>
+        • <strong>StudyPort Hilfe:</strong> studyport-support@fernuni-hagen.de
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 6: KI TUTOR ULTRA -->
+  <div id="tab-ai" class="content">
+    <div class="card" style="margin-bottom: 0;">
+      <h2>🤖 WiWi KI-Tutor Ultra (Aktionsfähig)</h2>
+      <div class="quick-prompts">
+        <button class="prompt-chip" onclick="quickPrompt('📅 Fristen automatisch eintragen')">📅 Auto-Fristen</button>
+        <button class="prompt-chip" onclick="quickPrompt('⚡ Erstelle mir einen Lernplan für meine aktiven Module')">⚡ Lernplan</button>
+        <button class="prompt-chip" onclick="quickPrompt('🌐 Wie funktioniert die Klausuranmeldung in StudyPort?')">🌐 StudyPort</button>
+        <button class="prompt-chip" onclick="quickPrompt('⚖️ Welche Regeln gelten für Notenverbesserung und Freiversuch?')">⚖️ Freiversuch</button>
+        <button class="prompt-chip" onclick="quickPrompt('🤒 Wie trete ich im Krankheitsfall von einer Klausur zurück?')">🤒 Krankheit</button>
+        <button class="prompt-chip" onclick="quickPrompt('💯 Berechne meinen aktuellen ECTS-Stand und Notenschnitt')">💯 Notenschnitt</button>
+      </div>
+      <div class="chat-box" id="chatBox">
+        <div class="chat-bubble ai">Hallo! Ich bin dein hochentwickeltes FernUni Hagen WiWi-Expertensystem Ultra. Ich kann deine Module verwalten, Termine direkt in deinen Kalender eintragen und kenne alle Prüfungsordnungen!
+
+💡 *Tipp: Du kannst mir auch direkt sagen: "Trage Klausur 31021 am 15.09.2026 ein" oder "Setze Modul 31011 auf Bestanden mit Note 1.3".*</div>
+      </div>
+      <div style="display: flex; gap: 6px; margin-top: 6px;">
+        <input type="text" id="chatInput" placeholder="Frage oder Befehl (z. B. Trage Termin ein...)..." style="margin-bottom:0;" onkeypress="if(event.key==='Enter') sendMsg()">
+        <button class="btn-add" style="width: 45px;" onclick="sendMsg()">➔</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- NAVIGATION -->
+  <div class="tab-bar">
+    <button class="tab-btn active" id="btn-tab-dashboard" onclick="switchTab('dashboard', this)"><span>🏠</span> Home</button>
+    <button class="tab-btn" id="btn-tab-module" onclick="switchTab('module', this)"><span>📖</span> Module</button>
+    <button class="tab-btn" id="btn-tab-lectures" onclick="switchTab('lectures', this)"><span>🎥</span> Vorlesung</button>
+    <button class="tab-btn" id="btn-tab-news" onclick="switchTab('news', this)"><span>📰</span> News</button>
+    <button class="tab-btn" id="btn-tab-info" onclick="switchTab('info', this)"><span>ℹ️</span> Info</button>
+    <button class="tab-btn" id="btn-tab-ai" onclick="switchTab('ai', this)"><span>🤖</span> KI-Tutor</button>
+  </div>
+</div>
+
+<script>
+  // FernUni Hagen WiWi Modulkatalog inklusive Vorlesungs- & Betreuungs-Metadaten
+  const fernUniCatalog = [
+    { 
+      code: "31001", 
+      name: "Einführung in die Wirtschaftswissenschaft", 
+      ects: 10, 
+      type: "Pflicht",
+      lectures: [
+        { title: "Online-Einführungsveranstaltung", time: "Semesterbeginn (Adobe Connect)", desc: "Überblick über Orientierung, Kurseinheiten & Moodle" },
+        { title: "Moodle-Betreuung & Mentoriat EBWL / EVWL", time: "Fortlaufend / Wöchentlich", desc: "Virtuelle Mentoriate der Regionalzentren (z. B. Hagen, München, Berlin)" }
+      ]
+    },
+    { 
+      code: "31011", 
+      name: "Externes Rechnungswesen", 
+      ects: 10, 
+      type: "Pflicht",
+      lectures: [
+        { title: "Einführung in die Buchhaltung (Buchführung)", time: "Monatlich live via Zoom", desc: "Buchungssätze, T-Konten und Bilanzerstellung" },
+        { title: "Klausurvorbereitungskurs JAP & Bilanzierung", time: "Ca. 4 Wochen vor Klausur", desc: "Durchsprache von Altklausuren" }
+      ]
+    },
+    { 
+      code: "31021", 
+      name: "Investition und Finanzierung", 
+      ects: 10, 
+      type: "Pflicht",
+      lectures: [
+        { title: "Finanzmathematische Grundlagen & Investitionsrechnung", time: "Mitte des Semesters", desc: "Kapitalwertmethode, Kw, Zinsfuß & Annuitäten" },
+        { title: "Unternehmensfinanzierung & Anleihen", time: "Vor Klausurphase", desc: "Virtuelle Fragestunde mit Lehrstuhl-Betreuern" }
+      ]
+    },
+    { 
+      code: "31031", 
+      name: "Internes Rechnungswesen & Funktionale Steuerung", 
+      ects: 10, 
+      type: "Pflicht",
+      lectures: [
+        { title: "Kosten- und Leistungsrechnung (KLR) Intensiv", time: "Monatlich", desc: "Kostenarten, Kostenstellen, Kostenträger & Deckungsbeitragsrechnung" }
+      ]
+    },
+    { 
+      code: "31041", 
+      name: "Mikroökonomik", 
+      ects: 10, 
+      type: "Pflicht",
+      lectures: [
+        { title: "Haushaltstheorie & Produktionstheorie", time: "Wöchentliches Moodle-Quiz + Live Stream", desc: "Nutzenmaximierung, Indifferenzkurven & Marktformen" }
+      ]
+    },
+    { 
+      code: "31051", 
+      name: "Makroökonomik", 
+      ects: 10, 
+      type: "Pflicht",
+      lectures: [
+        { title: "IS-LM-Modell & AS-AD-Modell", time: "Mitte Semester", desc: "Geld- und Gütermarktgleichgewicht sowie Inflation" }
+      ]
+    },
+    { 
+      code: "31061", 
+      name: "Grundlagen des Privat- und Wirtschaftsrechts", 
+      ects: 10, 
+      type: "Pflicht",
+      lectures: [
+        { title: "BGB Allgemeiner Teil & Schuldrecht Falllösung", time: "Alle 2 Wochen", desc: "Gutachtenstil für Rechtsklausuren" }
+      ]
+    },
+    { 
+      code: "31071", 
+      name: "Einführung in die Wirtschaftsinformatik", 
+      ects: 10, 
+      type: "Pflicht",
+      lectures: [
+        { title: "ER-Modellierung & SQL Datenbanken", time: "Flexibel auf Video-Server", desc: "Praktische Übungen zu Datenbanken & Geschäftsprozessen" }
+      ]
+    },
+    { 
+      code: "31101", 
+      name: "Grundlagen der Wirtschaftsmathematik & Statistik", 
+      ects: 10, 
+      type: "Pflicht",
+      lectures: [
+        { title: "Mathe-Repetitorium (Analysis/Linear A.)", time: "Wöchentlich", desc: "Matrixrechnung, Ableitungen, Extremwerte" },
+        { title: "Statistik Betreuungssitzungen", time: "Zweite Semesterhälfte", desc: "Wahrscheinlichkeitsrechnung & Deskriptive Statistik" }
+      ]
+    },
+    { 
+      code: "31102", 
+      name: "Unternehmensführung", 
+      ects: 10, 
+      type: "Pflicht",
+      lectures: [
+        { title: "Strategie & Organisation Online-Vortrag", time: "Monatlich", desc: "Fallstudien und Lehrstuhltalks" }
+      ]
+    },
+    { code: "31621", name: "Grundlagen des Marketing", ects: 10, type: "Wahlpflicht", lectures: [{ title: "Marketing-Mix & Marktforschung", time: "Online", desc: "Virtuelle Vorlesungen" }] },
+    { code: "31501", name: "Finanzwirtschaft", ects: 10, type: "Wahlpflicht", lectures: [{ title: "Portfoliotheorie & CAPM", time: "Online", desc: "Kapitalmarkttheorie" }] },
+    { code: "31701", name: "Personalführung", ects: 10, type: "Wahlpflicht", lectures: [{ title: "Führungstheorien & Motivation", time: "Online", desc: "Vorlesungsaufzeichnungen" }] },
+    { code: "31671", name: "Strategisches Management", ects: 10, type: "Wahlpflicht", lectures: [{ title: "BRiVE & Ressourcenansatz", time: "Online", desc: "Fallstudienseminar" }] },
+    { code: "31171", name: "Überfachliche Kompetenzen", ects: 10, type: "Pflicht", lectures: [{ title: "Wissenschaftliches Arbeiten", time: "Semesterstart", desc: "Schreiben von Hausarbeiten" }] }
+  ];
+
+  // Datenstrukturen
+  let modules = [];
+  let deadlines = [];
+  let newsList = [];
+
+  // Speicherung im LocalStorage
+  function loadData() {
+    const savedMods = localStorage.getItem('fw_modules');
+    const savedDL = localStorage.getItem('fw_deadlines');
+    const savedNews = localStorage.getItem('fw_news');
+
+    if (savedMods) {
+      modules = JSON.parse(savedMods);
+    } else {
+      modules = [
+        { id: 101, name: "31001: Einführung in die WiWi", ects: 10, status: "Bestanden", grade: 1.7 },
+        { id: 102, name: "31011: Externes Rechnungswesen", ects: 10, status: "In Bearbeitung", grade: null },
+        { id: 103, name: "31101: Wirtschaftsmathe & Statistik", ects: 10, status: "In Bearbeitung", grade: null }
+      ];
+    }
+
+    if (savedDL) {
+      deadlines = JSON.parse(savedDL);
+    } else {
+      deadlines = [
+        { id: 201, title: "StudyPort: Klausuranmeldung A2 Start", date: "2026-08-15" },
+        { id: 202, title: "StudyPort: Ende Klausuranmeldefrist A2", date: "2026-08-31" },
+        { id: 203, title: "EA 1 Abgabe Moodle (31011)", date: "2026-06-15" },
+        { id: 204, title: "Klausur 31011 Externes RW", date: "2026-09-08" }
+      ];
+    }
+
+    if (savedNews) {
+      newsList = JSON.parse(savedNews);
+    } else {
+      newsList = [
+        { id: 301, tag: "STUDYPORT", title: "Neue Fristen für Kursbelegungen online", text: "Die Kurse für das kommende Semester können jetzt direkt im StudyPort belegt werden. Bitte beachte die Frist bis zum 15.07." },
+        { id: 302, tag: "PRÜFUNGSAMT", title: "A2 Klausuranmeldungsphase startet", text: "Die Anmeldungen zu den schriftlichen Prüfungen erfolgen ab sofort zentral über StudyPort (POS-Prüfungsportal)." },
+        { id: 303, tag: "FAKULTÄT WIWI", title: "Online-Mentoriate aktualisiert", text: "Für die Module 31011 und 31101 wurden neue Termine im Moodle freigeschaltet." }
+      ];
+    }
+  }
+
+  function saveData() {
+    localStorage.setItem('fw_modules', JSON.stringify(modules));
+    localStorage.setItem('fw_deadlines', JSON.stringify(deadlines));
+    localStorage.setItem('fw_news', JSON.stringify(newsList));
+    
+    const badge = document.getElementById('saveBadge');
+    badge.style.opacity = '1';
+    setTimeout(() => { badge.style.opacity = '0.7'; }, 1000);
+  }
+
+  function exportData() {
+    const data = { modules, deadlines, newsList };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `FernUni_WiWi_Backup_${new Date().toISOString().slice(0,10)}.json`;
+    a.click();
+  }
+
+  function importData(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      try {
+        const data = JSON.parse(e.target.result);
+        if (data.modules && data.deadlines) {
+          modules = data.modules;
+          deadlines = data.deadlines;
+          newsList = data.newsList || [];
+          saveData();
+          renderModules();
+          renderDeadlines();
+          renderNews();
+          alert("Daten erfolgreich wiederhergestellt!");
+        }
+      } catch (err) {
+        alert("Fehler beim Laden der Backup-Datei!");
+      }
+    };
+    reader.readAsText(file);
+  }
+
+  function populateCatalogDropdown() {
+    const select = document.getElementById('mSelect');
+    select.innerHTML = '';
+    fernUniCatalog.forEach(m => {
+      const opt = document.createElement('option');
+      opt.value = JSON.stringify(m);
+      opt.innerText = `${m.code}: ${m.name} (${m.ects} ECTS - ${m.type})`;
+      select.appendChild(opt);
+    });
+  }
+
+  window.deleteModule = function(id) {
+    modules = modules.filter(m => m.id !== id);
+    saveData();
+    renderModules();
+  };
+
+  window.deleteDeadline = function(id) {
+    deadlines = deadlines.filter(d => d.id !== id);
+    saveData();
+    renderDeadlines();
+  };
+
+  window.deleteNews = function(id) {
+    newsList = newsList.filter(n => n.id !== id);
+    saveData();
+    renderNews();
+  };
+
+  function renderModules() {
+    const list = document.getElementById('moduleList');
+    list.innerHTML = '';
+    let totalEcts = 0;
+    let weightedSum = 0;
+    let gradedEcts = 0;
+    let activeCount = 0;
+
+    if(modules.length === 0) {
+      list.innerHTML = '<p style="font-size:12px; color:var(--text-muted); text-align:center; padding:15px 0;">Keine Module ausgewählt.</p>';
+    }
+
+    modules.forEach(m => {
+      if(m.status === 'Bestanden') {
+        totalEcts += m.ects;
+        if(m.grade) {
+          weightedSum += m.grade * m.ects;
+          gradedEcts += m.ects;
+        }
+      } else if(m.status === 'In Bearbeitung') {
+        activeCount++;
+      }
+
+      const item = document.createElement('div');
+      item.className = 'item-row';
+      item.innerHTML = `
+        <div>
+          <strong>${m.name}</strong> (${m.ects} ECTS)<br>
+          <small style="color:${m.status === 'Bestanden' ? 'var(--accent-green)' : (m.status === 'In Bearbeitung' ? 'var(--primary)' : 'var(--text-muted)')}">
+            ${m.status} ${m.grade ? '('+m.grade+')' : ''}
+          </small>
+        </div>
+        <button class="btn-del" onclick="deleteModule(${m.id})">🗑️</button>
+      `;
+      list.appendChild(item);
+    });
+
+    document.getElementById('ectsTotalDisplay').innerText = `${totalEcts} / 180 ECTS`;
+    document.getElementById('ectsProgressBar').style.width = `${Math.min((totalEcts / 180) * 100, 100)}%`;
+    
+    const gpa = gradedEcts > 0 ? (weightedSum / gradedEcts).toFixed(2) : "-";
+    document.getElementById('gpaDisplay').innerText = `Notenschnitt: ${gpa}`;
+    document.getElementById('activeCountDisplay').innerText = `${activeCount} in Bearbeitung`;
+
+    // Prognose für Endnote
+    const prognoseEl = document.getElementById('gpaPrognose');
+    if(gradedEcts > 0 && totalEcts < 180) {
+      prognoseEl.innerText = `📈 Endnoten-Prognose (bei aktuellem Schnitt): ~${gpa}`;
+    } else {
+      prognoseEl.innerText = '';
+    }
+
+    renderLectures();
+  }
+
+  function renderLectures() {
+    const container = document.getElementById('lecturesContainer');
+    const activeMods = modules.filter(m => m.status === 'In Bearbeitung');
+
+    if(activeMods.length === 0) {
+      container.innerHTML = `
+        <p style="font-size:12px; color:var(--text-muted); text-align:center; padding:15px 0;">
+          Keine aktiven Module vorhanden. Setze im Tab "Module" deine aktuellen Kurse auf "In Bearbeitung", um hier Termine und Vorlesungen zu sehen.
+        </p>
+      `;
+      return;
+    }
+
+    let html = '';
+    activeMods.forEach(m => {
+      const catEntry = fernUniCatalog.find(c => m.name.includes(c.code));
+      html += `<div style="margin-bottom:14px;"><strong style="font-size:13px; color:var(--primary);">${m.name}</strong></div>`;
+
+      if(catEntry && catEntry.lectures) {
+        catEntry.lectures.forEach(l => {
+          html += `
+            <div class="lecture-item">
+              <strong>📹 ${l.title}</strong><br>
+              <span style="color:var(--text-muted);">🕒 ${l.time}</span><br>
+              <span>ℹ️ ${l.desc}</span>
+            </div>
+          `;
+        });
+      } else {
+        html += `<div class="lecture-item">Vorlesungen & Mentoriatstermine direkt im Moodle-Kursraum abrufbar.</div>`;
+      }
+    });
+
+    container.innerHTML = html;
+  }
+
+  function renderNews() {
+    const container = document.getElementById('newsContainer');
+    container.innerHTML = '';
+
+    if(newsList.length === 0) {
+      container.innerHTML = `<p style="font-size:12px; color:var(--text-muted); text-align:center; padding:15px 0;">Keine aktuellen Nachrichten vorhanden.</p>`;
+      return;
+    }
+
+    newsList.forEach(n => {
+      const item = document.createElement('div');
+      item.className = 'news-item';
+      item.innerHTML = `
+        <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+          <span class="news-tag">${n.tag}</span>
+          <button class="btn-del" style="padding: 2px 6px; font-size:10px;" onclick="deleteNews(${n.id})">✕</button>
+        </div>
+        <strong style="font-size:12px; display:block; margin:4px 0; color:var(--text);">${n.title}</strong>
+        <p style="font-size:11px; color:#444; line-height:1.3;">${n.text}</p>
+      `;
+      container.appendChild(item);
+    });
+  }
+
+  function addCustomNews() {
+    const title = document.getElementById('newsTitle').value.trim();
+    const text = document.getElementById('newsBody').value.trim();
+    if(title && text) {
+      newsList.unshift({ id: Date.now(), tag: "NOTIZ", title, text });
+      document.getElementById('newsTitle').value = '';
+      document.getElementById('newsBody').value = '';
+      saveData();
+      renderNews();
+    }
+  }
+
+  function toggleGradeInput() {
+    const status = document.getElementById('mStatus').value;
+    document.getElementById('mGrade').style.display = status === 'Bestanden' ? 'block' : 'none';
+  }
+
+  function addModuleFromCatalog() {
+    const raw = document.getElementById('mSelect').value;
+    if(!raw) return;
+    const item = JSON.parse(raw);
+    const status = document.getElementById('mStatus').value;
+    const gradeVal = parseFloat(document.getElementById('mGrade').value);
+
+    if(modules.some(m => m.name.includes(item.code))) {
+      alert("Dieses Modul hast du bereits hinzugefügt!");
+      return;
+    }
+
+    modules.push({
+      id: Date.now(),
+      name: `${item.code}: ${item.name}`,
+      ects: item.ects,
+      status: status,
+      grade: status === 'Bestanden' && !isNaN(gradeVal) ? gradeVal : null
+    });
+
+    saveData();
+    renderModules();
+  }
+
+  function renderDeadlines() {
+    const list = document.getElementById('deadlineList');
+    list.innerHTML = '';
+
+    // Sortieren nach Datum
+    deadlines.sort((a,b) => new Date(a.date) - new Date(b.date));
+
+    const today = new Date();
+    today.setHours(0,0,0,0);
+
+    deadlines.forEach(d => {
+      const dDate = new Date(d.date);
+      const diffTime = dDate - today;
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+      let countdownBadge = '';
+      if(diffDays < 0) {
+        countdownBadge = `<span style="color:var(--text-muted); font-size:10px;">(Abgelaufen)</span>`;
+      } else if(diffDays === 0) {
+        countdownBadge = `<span style="color:var(--accent-red); font-weight:bold; font-size:10px;">🔥 HEUTE</span>`;
+      } else if(diffDays <= 7) {
+        countdownBadge = `<span style="color:var(--accent-orange); font-weight:bold; font-size:10px;">⏳ in ${diffDays} Tagen</span>`;
+      } else {
+        countdownBadge = `<span style="color:var(--primary); font-size:10px;">in ${diffDays} Tagen</span>`;
+      }
+
+      const item = document.createElement('div');
+      item.className = 'item-row';
+      item.innerHTML = `
+        <span><strong>${d.title}</strong> ${countdownBadge}<br><small style="color:var(--text-muted);">${d.date}</small></span>
+        <button class="btn-del" onclick="deleteDeadline(${d.id})">🗑️</button>
+      `;
+      list.appendChild(item);
+    });
+  }
+
+  function addDeadline() {
+    const title = document.getElementById('dlTitle').value.trim();
+    const date = document.getElementById('dlDate').value;
+    if(title && date) {
+      deadlines.push({ id: Date.now(), title, date });
+      document.getElementById('dlTitle').value = '';
+      document.getElementById('dlDate').value = '';
+      saveData();
+      renderDeadlines();
+    }
+  }
+
+  function switchTab(tabId, btn) {
+    document.querySelectorAll('.content').forEach(c => c.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('tab-' + tabId).classList.add('active');
+    
+    if(btn) {
+      btn.classList.add('active');
+    } else {
+      const targetBtn = document.getElementById('btn-tab-' + tabId);
+      if(targetBtn) targetBtn.classList.add('active');
+    }
+  }
+
+  function switchToTabAndFocus(tabId, elementId) {
+    switchTab(tabId);
+    setTimeout(() => {
+      const el = document.getElementById(elementId);
+      if(el) el.focus();
+    }, 100);
+  }
+
+  function triggerAILernplan() {
+    switchTab('ai');
+    quickPrompt('⚡ Erstelle mir einen Lernplan für meine aktiven Module');
+  }
+
+  function triggerAutoDeadlines() {
+    switchTab('ai');
+    quickPrompt('📅 Fristen automatisch eintragen');
+  }
+
+  function sendMsg() {
+    const input = document.getElementById('chatInput');
+    const text = input.value.trim();
+    if(!text) return;
+    quickPrompt(text);
+    input.value = '';
+  }
+
+  function quickPrompt(text) {
+    const box = document.getElementById('chatBox');
+    box.innerHTML += `<div class="chat-bubble user">${text}</div>`;
+    box.scrollTop = box.scrollHeight;
+
+    setTimeout(() => {
+      let reply = "";
+      const lower = text.toLowerCase();
+      
+      // Studiendaten
+      const activeMods = modules.filter(m => m.status === 'In Bearbeitung');
+      const passedMods = modules.filter(m => m.status === 'Bestanden');
+      const totalEcts = passedMods.reduce((acc, curr) => acc + curr.ects, 0);
+      let weightedSum = 0;
+      let gradedEcts = 0;
+      passedMods.forEach(m => {
+        if(m.grade) {
+          weightedSum += m.grade * m.ects;
+          gradedEcts += m.ects;
+        }
+      });
+      const gpa = gradedEcts > 0 ? (weightedSum / gradedEcts).toFixed(2) : "N/A";
+
+      // --- KI PARSER & AKTIONEN (Function Calling Simulation) ---
+
+      // 1. Automatische Fristen-Generierung für aktive Module
+      if(lower.includes("fristen automatisch") || lower.includes("auto-fristen")) {
+        if(activeMods.length === 0) {
+          reply = "⚠️ Du hast derzeit keine aktiven Module. Setze zuerst Module im Tab 'Module' auf 'In Bearbeitung'!";
+        } else {
+          let addedCount = 0;
+          activeMods.forEach(m => {
+            const code = m.name.split(':')[0].trim();
+            const year = new Date().getFullYear();
+            
+            // Einsendearbeit Frist
+            const eaTitle = `EA Abgabe Moodle (${code})`;
+            if(!deadlines.some(d => d.title.includes(eaTitle))) {
+              deadlines.push({ id: Date.now() + Math.random(), title: eaTitle, date: `${year}-06-15` });
+              addedCount++;
+            }
+            // Klausur Frist
+            const examTitle = `Klausur ${code}`;
+            if(!deadlines.some(d => d.title.includes(examTitle))) {
+              deadlines.push({ id: Date.now() + Math.random(), title: examTitle, date: `${year}-09-10` });
+              addedCount++;
+            }
+          });
+
+          saveData();
+          renderDeadlines();
+          reply = `✅ Ich habe **${addedCount} Standard-Fristen** (Einsendearbeiten & Klausuren) für deine aktiven Module (${activeMods.map(m=>m.name.split(':')[0]).join(', ')}) direkt in deine Termine eingetragen!`;
+        }
+      }
+      
+      // 2. Erkenne explizite Termin-Befehle (z. B. "Trage Klausur XY am 2026-09-10 ein" oder "Termin X am Y")
+      else if((lower.includes("trage") || lower.includes("erstelle") || lower.includes("füge")) && (lower.includes("termin") || lower.includes("klausur") || lower.includes("frist") || lower.includes("am"))) {
+        const dateMatch = text.match(/\d{4}-\d{2}-\d{2}/) || text.match(/\d{1,2}\.\d{1,2}\.\d{4}/);
+        if(dateMatch) {
+          let dateStr = dateMatch[0];
+          if(dateStr.includes('.')) {
+            const parts = dateStr.split('.');
+            dateStr = `${parts[2]}-${parts[1].padStart(2,'0')}-${parts[0].padStart(2,'0')}`;
+          }
+          const title = text.replace(/trage|erstelle|füge|hinzu|ein|am|\d{4}-\d{2}-\d{2}|\d{1,2}\.\d{1,2}\.\d{4}/gi, '').trim();
+          
+          deadlines.push({ id: Date.now(), title: title || "Neuer KI-Termin", date: dateStr });
+          saveData();
+          renderDeadlines();
+          reply = `🎯 **Aktion ausgeführt:** Ich habe den Termin **"${title || "Neuer KI-Termin"}"** am **${dateStr}** in deinen Dashboard-Kalender eingetragen!`;
+        } else {
+          reply = "💡 Bitte gib das Datum im Format **JJJJ-MM-TT** oder **TT.MM.JJJJ** an, z.B.: *Trage Klausur 31021 am 10.09.2026 ein*.";
+        }
+      }
+
+      // 3. Modul-Noten/Status anpassen (z. B. "Setze Modul 31011 auf Bestanden mit Note 1.3")
+      else if(lower.includes("setze") || lower.includes("bestanden") || lower.includes("note")) {
+        const codeMatch = text.match(/\d{5}/);
+        const gradeMatch = text.match(/\b[1-5][.,][0-9]\b/);
+
+        if(codeMatch) {
+          const code = codeMatch[0];
+          const modIndex = modules.findIndex(m => m.name.includes(code));
+          
+          if(modIndex !== -1) {
+            modules[modIndex].status = "Bestanden";
+            if(gradeMatch) {
+              modules[modIndex].grade = parseFloat(gradeMatch[0].replace(',', '.'));
+            }
+            saveData();
+            renderModules();
+            reply = `🎉 **Herzlichen Glückwunsch!** Ich habe das Modul **${modules[modIndex].name}** auf **Bestanden** ${modules[modIndex].grade ? 'mit Note '+modules[modIndex].grade : ''} aktualisiert. Dein Schnitt wurde neu berechnet!`;
+          } else {
+            reply = `🔍 Ich konnte das Modul mit dem Code **${code}** nicht in deiner aktiven Liste finden. Füge es erst im Tab 'Module' hinzu.`;
+          }
+        } else {
+          reply = "💡 Sag mir den Modulcode (z. B. 31011) und die Note, z. B.: *Setze Modul 31011 auf Bestanden mit Note 1.7*.";
+        }
+      }
+
+      // 4. KI Wissensantworten
+      else if(lower.includes("notenschnitt") || lower.includes("ects") || lower.includes("fortschritt")) {
+        reply = `📊 **Dein aktueller Studienstatus:**\n\n` +
+                `• **Erreichte ECTS:** ${totalEcts} von 180 ECTS\n` +
+                `• **Aktueller Notenschnitt:** ${gpa}\n` +
+                `• **Bestandene Module:** ${passedMods.length}\n` +
+                `• **In Bearbeitung:** ${activeMods.length} (${activeMods.map(m => m.name).join(', ') || 'Keine'})\n\n` +
+                `💡 **KI-Empfehlung:** ${totalEcts >= 120 ? 'Du näherst dich der Bachelorarbeit! Plane frühzeitig die Kontaktaufnahme zu Wunsch-Lehrstühlen.' : 'Konzentriere dich darauf, die Pflichtmodule zügig abzuschließen.'}`;
+      } else if(lower.includes("freiversuch") || lower.includes("verbesserung") || lower.includes("ordnung") || lower.includes("regel")) {
+        reply = "⚖️ **Regelungen nach FernUni Prüfungsordnung (B.Sc. WiWi):**\n\n" +
+                "• **Wiederholungsversuche:** Jede Modulabschlussprüfung kann im Falle des Nichtbestehens bis zu zweimal (insgesamt 3 Versuche) wiederholt werden.\n" +
+                "• **Notenverbesserung (Freiversuch):** Bestandene Prüfungen können unter bestimmten Bedingungen einmalig zur Notenverbesserung wiederholt werden (siehe aktuelle PO §13). Es zählt das bessere Ergebnis.\n" +
+                "• **Fristen:** Die Notenverbesserung muss in der Regel im darauffolgenden Semester wahrgenommen werden.";
+      } else if(lower.includes("krankheit") || lower.includes("attest") || lower.includes("rücktritt")) {
+        reply = "🤒 **Verhalten bei Krankheit / Prüfungsrücktritt:**\n\n" +
+                "• **Unverzüglichkeit:** Das ärztliche Attest muss unverzüglich (spätestens innerhalb von 3 Werktagen) beim Prüfungsamt WiWi eingereicht werden.\n" +
+                "• **Formular:** Verwendet am besten das offizielle Formular der FernUni zur Prüfungsunfähigkeit.\n" +
+                "• **Rücktritt vor der Prüfung:** Bis spätestens einen Tag vor der Klausur kannst du im StudyPort kostenfrei ohne Angabe von Gründen zurücktreten!";
+      } else if(lower.includes("studyport") || lower.includes("portal")) {
+        reply = "🌐 **StudyPort FernUni Hagen – Vollständiger Guide:**\n\n" +
+                "• **Zugang:** [studyport.fernuni-hagen.de](https://studyport.fernuni-hagen.de)\n" +
+                "• **Modulbelegung:** Jedes Semester zwingend erforderlich zur Materialbestellung & Moodle-Freischaltung.\n" +
+                "• **Prüfungsanmeldung:** Erfolgt im Anmeldezeitraum A1/A2 direkt im Portal unter 'Meine Prüfungen'.\n" +
+                "• **Klausurabgabe:** Download von Notenspiegeln und Studienbescheinigungen jederzeit als PDF.";
+      } else if(lower.includes("lehrplan") || lower.includes("semesterplan") || lower.includes("lernplan")) {
+        if(activeMods.length === 0) {
+          reply = "⚠️ Du hast aktuell keine Module mit dem Status 'In Bearbeitung'. Füge im Tab 'Module' deine aktuellen Kurse hinzu!";
+        } else {
+          reply = `📌 **Persönlicher KI-Lernplan für dich:**\n\n` +
+                  `Deine aktiven Module: **${activeMods.map(m => m.name).join(', ')}**\n\n` +
+                  `• **Woche 1–6:** Skripte durcharbeiten, mathematische/buchhalterische Beispiele aktiv auf Papier mitrechnen.\n` +
+                  `• **Woche 7–10:** Einsendearbeiten (EA) in Moodle fristgerecht bearbeiten.\n` +
+                  `• **Woche 11–12:** Prüfungsanmeldung über **StudyPort** im Zeitfenster erledigen!\n` +
+                  `• **Woche 13–16:** Intensivphase: Nur noch Altklausuren unter realen Zeitbedingungen lösen.`;
+        }
+      } else {
+        reply = `🤖 **FernUni WiWi-Tutor Ultra:** Ich bin mit deinen Live-Daten verbunden. Ich kann Termine eintragen, deine Noten speichern oder dir bei Fachfragen helfen!`;
+      }
+
+      box.innerHTML += `<div class="chat-bubble ai">${reply.replace(/\n/g, '<br>')}</div>`;
+      box.scrollTop = box.scrollHeight;
+    }, 350);
+  }
+
+  // Beim Laden ausführen
+  loadData();
+  populateCatalogDropdown();
+  renderModules();
+  renderDeadlines();
+  renderNews();
+</script>
+</body>
+</html>
